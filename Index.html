@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Controle de Rotas</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f7;--surf:#fff;--ink:#14323a;--mut:#5d7279;--line:#d5dfe2;--acc:#1b6f66;--acc-ink:#fff;--prev:#dbe8f8;--prev-ink:#1d4a7c;--real:#dbefe1;--real-ink:#1d5a33;--bad:#a3331f;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1b1f;--surf:#172a30;--ink:#e6f0f2;--mut:#93aab1;--line:#2a4249;--acc:#4fb8aa;--acc-ink:#07201d;--prev:#1d3552;--prev-ink:#a9c9f0;--real:#1b3d29;--real-ink:#a6dbb8;--bad:#f09a86;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1b1f;--surf:#172a30;--ink:#e6f0f2;--mut:#93aab1;--line:#2a4249;--acc:#4fb8aa;--acc-ink:#07201d;--prev:#1d3552;--prev-ink:#a9c9f0;--real:#1b3d29;--real-ink:#a6dbb8;--bad:#f09a86;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:end;justify-content:space-between;margin-bottom:16px}
+h1{font-size:24px;margin:0;letter-spacing:-.01em}
+header p{margin:2px 0 0;color:var(--mut)}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut);font-weight:500}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;font:inherit;font-weight:600;color:var(--mut);cursor:pointer;white-space:nowrap}
+nav button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--acc)}
+.panel{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}
+.panel h2{font-size:16px;margin:0 0 12px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;align-items:end}
+.btn{background:var(--acc);color:var(--acc-ink);border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.hint{color:var(--mut);font-size:13px;margin:8px 0 0}
+.scroll{overflow-x:auto}
+.rh{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.rh h3{margin:0;font-size:18px}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--prev);color:var(--prev-ink);margin-left:6px;vertical-align:middle}
+.tag.o{background:var(--real);color:var(--real-ink)}
+table{border-collapse:collapse;width:100%;min-width:780px}
+th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:13px;font-weight:600;color:var(--mut)}
+td.n,th.n{text-align:right;white-space:nowrap}
+.p{background:var(--prev);color:var(--prev-ink)}.r{background:var(--real);color:var(--real-ink)}
+td input.q{width:68px;padding:5px 8px}td select,td input{padding:5px 8px}
+.add{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.empty{padding:24px;text-align:center;color:var(--mut)}
+.warn,.bad{color:var(--bad);font-weight:600}
+textarea{width:100%;min-height:380px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:12px}
+.tot{text-align:right;font-weight:700;margin-top:10px}
+.sub{font-size:12px;color:var(--mut);font-weight:400;line-height:1.3}
+ul.hint{padding-left:18px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips label{flex-direction:row;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:5px 12px;color:var(--ink);font-size:14px;cursor:pointer}
+.chips label:has(input:checked){background:var(--prev);border-color:transparent;color:var(--prev-ink)}
+.chips input{margin:0}
+.zona{border-top:1px solid var(--line);padding-top:12px;margin-top:14px}
+.cids{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;align-items:center}
+.cids .tag{margin:0;background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:500}
+.cids input{padding:3px 10px;width:130px;font-size:13px}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:14px;padding:0 0 0 4px}
+
+:root{--bg:#f7f7f8;--surf:#fff;--ink:#1c1c1e;--mut:#6b7280;--line:#e5e7eb;--acc:#d71920;--acc-ink:#fff;--sf2:#f0f1f3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141516;--surf:#1d1f21;--ink:#ececec;--mut:#9ca3af;--line:#33363a;--acc:#ff5a60;--acc-ink:#1c0507;--sf2:#2a2d30}}
+.wrap{max-width:1180px}
+.top{background:var(--surf);border-bottom:1px solid var(--line);padding:12px 24px;display:flex;flex-wrap:wrap;gap:14px 22px;align-items:center;margin:0}
+.logo{font-weight:800;color:var(--acc);font-size:21px;letter-spacing:.02em;line-height:1}.logo small{display:block;font-size:7px;letter-spacing:.34em;color:var(--mut);font-weight:500;margin-top:2px}
+.top h1{font-size:17px}
+.top nav{background:var(--sf2);border:0;border-radius:12px;padding:4px;margin:0;gap:2px}
+.top nav button{border:0;border-radius:9px;padding:8px 14px;font-weight:500}
+.top nav button[aria-selected=true]{background:var(--surf);color:var(--acc);box-shadow:0 1px 3px #0003}
+.me{margin-left:auto;display:flex;gap:14px;align-items:center;font-size:13px;color:var(--mut)}
+.me label{flex-direction:row;align-items:center;gap:8px}
+.fil{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.chb{border:1px solid var(--line);background:var(--surf);color:var(--ink);border-radius:99px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.chb:hover{border-color:var(--acc);color:var(--acc)}.chb.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+#sn{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tag.w{background:#fdecc8;color:#7a4b00}.tag.b{background:#fde2e2;color:#9b1c1c}
+tr.cl{cursor:pointer}tr.cl:hover td{background:var(--sf2)}
+.panel h2{font-size:17px}
+.top nav{overflow:visible}
+.dm{position:relative}
+.mn{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 10px 28px #0003;z-index:30}
+.dm.open .mn{display:block}
+.top nav .mn button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;border-radius:7px;color:var(--ink);font:inherit;cursor:pointer;white-space:nowrap}
+.top nav .mn button:hover{background:var(--sf2);color:var(--acc)}
+.rcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;margin-bottom:16px}
+.rc{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;gap:12px}
+.rc:hover{border-color:var(--acc)}
+.rc-h{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.rc-m{display:flex;gap:8px 14px;flex-wrap:wrap;font-size:13px;color:var(--mut);align-items:center}
+.rc-p{margin:0;font-size:14px;line-height:1.6}
+.rc-f{display:flex;justify-content:space-between;align-items:center;margin-top:auto;border-top:1px solid var(--line);padding-top:12px}
+.pr{display:flex;gap:8px;flex-wrap:wrap}.pr span{background:var(--sf2);border-radius:8px;padding:4px 10px;font-size:13px}
+.pst{display:block;margin:4px 0 12px}.pst textarea{width:100%;min-height:64px}
+.panel .tag.o,.tag.o{background:#e3f0e5;color:#22602d}
+:root{--prev:#eceff2;--prev-ink:#39424e;--real:#fdf0d2;--real-ink:#6b4400;--okc:#1f6b33}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--prev:#2c3036;--prev-ink:#d3d9e0;--real:#463413;--real-ink:#f3d79a;--okc:#7bd88f}.tag.o{background:#1d3a24;color:#9be0ad}}
+:root[data-theme="dark"]{--prev:#2c3036;--prev-ink:#d3d9e0;--real:#463413;--real-ink:#f3d79a;--okc:#7bd88f}
+.ok{color:var(--okc);font-weight:600}
+.panel.st-pend{border-left:5px solid #d99a1b}.panel.st-ok{border-left:5px solid var(--mut)}
+.pz{display:flex;gap:12px;align-items:end;flex-wrap:wrap;margin-bottom:8px}.pz label{margin:0!important}
+td .sub.warn{font-weight:600}
+.btn.big{font-size:17px;padding:14px 24px}.pa{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.kcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:16px}
+.kc{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.kc small{color:var(--mut);font-size:12px}.kc b{font-size:22px}.kc.sol{background:var(--prev);border-color:transparent}.kc.gas{background:var(--real);border-color:transparent}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.br{margin-bottom:12px}.bl{font-size:13px;font-weight:600;margin-bottom:4px}.bb{display:flex;align-items:center;gap:8px;margin-bottom:3px}.bb div{height:14px;border-radius:4px;min-width:2px}.bb span{font-size:12px;color:var(--mut)}
+.bs{background:#59636f}.bg{background:#b9c0ca}.lg{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 12px}.lg.s{background:#59636f}.lg.g{background:#b9c0ca}
+.fit{table-layout:fixed;width:100%}.fit th,.fit td{white-space:normal;word-break:break-word;padding:8px 6px;font-size:13px}.fit input,.fit select{width:100%;min-width:0;padding:6px}
+.pg2{display:flex;gap:4px}.pg2 select{width:58px;flex:none}.pg2 input{flex:1}
+:root{--prev:#d3d8df;--prev-ink:#28303a;--real:#eff1f4;--real-ink:#28303a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--prev:#3b424b;--prev-ink:#e1e6ec;--real:#292d33;--real-ink:#e1e6ec}.bs{background:#aeb7c2}.bg{background:#5c6570}}
+:root[data-theme="dark"]{--prev:#3b424b;--prev-ink:#e1e6ec;--real:#292d33;--real-ink:#e1e6ec}
+th.p{background:#bfc6cf;color:#222a33}th.r{background:#dde1e6;color:#222a33}
+.acomp-table{min-width:1050px}.acomp-table input,.acomp-table select{width:100%;min-width:90px;padding:6px}.acomp-table td{font-size:13px}
+@media(max-width:700px){.wrap{padding:12px 10px 32px}.acomp-table{min-width:1000px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="logo">FORTES<small>TECNOLOGIA</small></div><h1>Controle de Rotas</h1>
+<nav>
+<button class="mb" data-t="rot" aria-selected="true">Rotas do mês</button>
+<button class="mb" data-t="pre" aria-selected="false">Prestação de contas</button>
+<button class="mb" data-t="dsh" aria-selected="false">Dashboard</button>
+<button class="mb" data-t="cad" aria-selected="false">Cadastros</button>
+</nav>
+<div class="me"><label>Mês<input type="month" id="mes"></label><span><b>Letícia Mendes</b> · Gestora</span></div></header>
+<div class="wrap">
+
+<section id="rot">
+  <div id="kp" class="kcs"></div>
+  <div id="tb" class="panel"><div class="rh"><h2 style="margin:0">Rotas do mês</h2><button class="btn" id="bn">+ Nova rota</button></div>
+  <div class="row" style="margin:0 0 8px"><b>🔎 Filtros</b><span class="hint">Use os campos abaixo para localizar rotas; não é necessário preencher todos.</span></div><div class="fil"><label>Zona<select id="fz"></select></label><label>Tipo<select id="ft"><option value="">Todos</option><option value="bate">Bate e volta</option><option value="pernoite">Para dormir</option></select></label><label>Colaborador<select id="fc"></select></label><label>Prestação<select id="fs"><option value="">Todas</option><option value="vazia">Sem pessoas</option><option value="pend">Pendente</option><option value="ok">Feita</option></select></label><label>Buscar cidade<input id="fq" placeholder="Ex.: Itapipoca"></label></div></div>
+  <div class="panel" id="np" hidden>
+    <h2 id="nth">Nova rota</h2>
+    <div class="form">
+      <label>Zona<select id="nz"></select></label>
+      <label>Ida<input type="date" id="ndt"></label><label>Volta<input type="date" id="ndv"></label><label>Período<select id="nturno"><option value="integral">Dia inteiro</option><option value="manha">Somente manhã</option><option value="tarde">Somente tarde</option></select></label><button class="btn ghost" id="cancr" type="button">Cancelar</button>
+    </div>
+    <p class="hint" style="margin-top:12px">Cidades da zona (marque as que serão visitadas):</p><div id="nc" class="chips"></div><label style="margin-top:12px;max-width:320px">Outro destino (opcional)<input id="no" placeholder="Cidade fora da lista"></label><p class="hint" id="nh"></p><div class="pa"><button class="btn" id="addr">Adicionar colaboradores →</button></div>
+  </div>
+  <div id="lr"></div><div class="panel" id="acomp"><div class="rh"><h2 style="margin:0">📋 Acompanhamento das rotas</h2><span class="hint">Planejamento e registro das visitas do mês</span></div><div id="acompbody"></div></div>
+</section>
+
+<section id="pre" hidden>
+  <div id="pkc" class="kcs"></div>
+  <div id="psn" class="row" style="margin-bottom:14px"></div>
+  <div id="pp-rot"><div id="lp"></div></div>
+  <div id="pp-res" hidden><div class="panel"><h2>Resumo por colaborador</h2><div id="res"></div></div></div>
+  <div id="pp-eml" hidden><div class="panel"><div class="row"><label>Tipo de e-mail<select id="et"><option value="sol">Solicitação de valores</option><option value="pre">Prestação de contas</option></select></label></div><label>Assunto do e-mail<input id="esub" readonly></label><div class="row"><button class="btn ghost sm" id="copysub">Copiar assunto</button><span class="hint" id="cms"></span></div><label>Corpo do e-mail<textarea id="eb" readonly style="min-height:280px"></textarea></label><div class="row"><button class="btn" id="copy">Copiar corpo do e-mail</button><span class="hint" id="cm"></span></div></div></div>
+</section>
+
+
+<section id="dsh" hidden>
+  <div id="dk" class="kcs"></div>
+  <div class="g2"><div class="panel"><h2>Por zona</h2><div id="dz"></div></div><div class="panel"><h2>Por centro de custo</h2><div id="dcc"></div></div></div>
+  <div class="g2"><div class="panel"><h2>Evolução por mês</h2><div id="dmo"></div></div><div class="panel"><h2>Pousadas mais usadas no mês</h2><div id="dpou"></div></div></div>
+  <div class="panel"><div class="rh"><h2 style="margin:0">Detalhe por zona e centro de custo</h2><span><button class="btn ghost sm" id="xls">Copiar dados do mês (colar no Excel)</button> <span class="hint" id="xm" aria-live="polite"></span></span></div><div id="rz1"></div><div id="rz2" style="margin-top:18px"></div></div>
+</section>
+
+<section id="cad" hidden><div id="sn"></div>
+  <div class="panel" id="c-col">
+    <h2>Colaboradores</h2>
+    <div class="form">
+      <label>Nome<input id="cn" placeholder="Nome completo"></label>
+      <label>Centro de custo<input id="cc" list="ccs" placeholder="Ex.: CS"></label>
+      <datalist id="ccs"><option>CS</option><option>Suporte</option><option>Comercial</option><option>Diretoria</option></datalist>
+      <button class="btn" id="addc">Cadastrar</button>
+    </div>
+    <p class="hint" id="ch"></p>
+    <div class="scroll" id="cadc"></div>
+  </div>
+  <div class="panel" id="c-zon" hidden>
+    <h2>Zonas, rotas e cidades</h2>
+    <p class="hint" style="margin:-6px 0 0">A tarifa define os valores de hospedagem da zona. Você pode remover cidades ou adicionar novas em cada rota.</p>
+    <div id="cadz"></div>
+  </div>
+  <div class="panel" id="c-pou" hidden>
+<div class="rh"><h2 style="margin:0">Pousadas</h2><span><span class="hint" id="pc"></span> <button class="btn" id="xnew">+ Nova pousada</button></span></div>
+<div id="xf" class="box" hidden style="border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0"><h3 id="xh" style="margin-top:0">Nova pousada</h3>
+<label class="pst">Colar contato e endereço (opcional)<textarea id="xp" placeholder="Cole aqui o texto com telefone e endereço (do Google Maps, WhatsApp etc.)"></textarea></label><button class="btn ghost sm" id="xpb" type="button" style="margin-bottom:14px">Preencher campos automaticamente</button>
+<div class="form"><label>Nome da pousada<input id="xn"></label><label>Cidade<input id="xc" list="cids"></label><label>Telefone / WhatsApp<input id="xt"></label><label>Endereço<input id="xe"></label><label>Café da manhã incluso?<select id="xk"><option value="">Não informado</option><option value="sim">Sim</option><option value="nao">Não</option></select></label></div>
+<p class="hint" style="margin:14px 0 4px">Valores do quarto por diária (R$)</p>
+<div class="form"><label>Individual<input id="xi" type="number" min="0"></label><label>Dupla (valor do quarto)<input id="xd" type="number" min="0"></label><label>Triplo<input id="xr" type="number" min="0"></label><label>Quádruplo<input id="xq" type="number" min="0"></label></div>
+<label style="margin-top:12px">Observações<input id="xo"></label>
+<div class="row" style="margin-top:14px"><button class="btn" id="xs">Salvar pousada</button><button class="btn ghost" id="xcn" type="button">Cancelar</button><span class="hint" id="ah" aria-live="polite"></span></div></div>
+<div class="fil"><label>Buscar<input id="pq" placeholder="Nome, endereço ou contato"></label><label>Zona<select id="pz"></select></label><label>Cidade<select id="pcid"></select></label><label>Limite da zona<select id="pl"><option value="">Todas</option><option value="ok">Dentro do limite</option><option value="no">Acima do limite</option></select></label><label>Café da manhã<select id="pk"><option value="">Todos</option><option value="sim">Incluso</option><option value="nao">Não incluso</option></select></label></div>
+<div id="pt" style="margin-top:16px"></div></div>
+  <div class="panel" id="c-reg" hidden><h2>Valores e tarifas</h2><div class="form" style="max-width:300px"><label>Alimentação por refeição (R$)<input id="ral" type="number" min="0" step="0.01"></label></div><p class="hint">Hospedagem por pessoa. Cada rota (em Zonas, rotas e cidades) usa uma destas tarifas.</p><div class="scroll" id="cadt"></div></div>
+  <datalist id="cids"></datalist>
+</section>
+
+
+</div>
+
+<script>
+const T={'Litoral':{individual:100,dupla:80,triplo:80},'Sobral / Serra':{individual:85,dupla:75,triplo:75},'Sertão Inhamus':{individual:90,dupla:80,triplo:80}};let AL=25;const tarR=(z,r)=>r.tarifa||z.tarifa;
+const P={'Sindel Vitória':'CS','Karina Alves':'CS','Karyne Brandão':'CS','Rafael Mathias':'Suporte','Edler Cassiano':'Diretoria'};
+let S={mes:'2026-11',rotas:[],ent:{},open:null,nova:false,sub:'col'};
+try{const s=localStorage.getItem('rotas-v3');if(s)S=JSON.parse(s)}catch(e){}
+const Z=(n,t,r)=>({nome:n,tarifa:t,rotas:r.map((c,i)=>({nome:'Rota '+(i+1),cidades:c.split(', ')}))});
+const ZONAS=[
+Z('Zona Litoral','Litoral',['Acaraú, Bela Cruz, Cruz, Jijoca, Marco, Prea','Camocim, Barroquinha, Chaval, Granja, Massapê, Uruoca, Martinópole, Senador Sá, Moraújo','Itapipoca, Amontada, Miraíma, Santana do Acaraú, Morrinhos, Uruburetama','Paracuru, Pentecoste, Trairi, Flecheiras']),
+Z('Zona Serra Grande','Sobral / Serra',['Tianguá, São Benedito, Ubajara, Viçosa do Ceará, Ibiapina, Guaraciaba do Norte, Croatá, Carnaubal','Groaíras, Cariré, Pacujá, Mucambo, Graça','Ipu, Ipueiras, Varjota, Reriutaba, Pires Ferreira']),
+Z('Zona Sertão Central','Sobral / Serra',['Crateús, Independência, Ipaporanga, Nova Russas, Novo Oriente, Santa Quitéria, Hidrolândia, Catunda, Monsenhor Tabosa, Tamboril','Forquilha, Irauçuba, Itapajé, São Gonçalo do Amarante, São Luís do Curu, Pecém','Sobral, Meruoca, Alcântara, Coreaú, Moraújo'])];
+const syncP=()=>{Object.keys(P).forEach(k=>delete P[k]);S.colabs.forEach(c=>P[c.nome]=c.cc)};
+const POUS=[["Hotel Pilotos","Itapipoca","Av. Monsenhor Tabosa, 2168, Madalenas","88 99777-0001",80,100,0,0],["Hotel Casa Branca","Itapipoca","Av. Monsenhor Tabosa, 2695, Madalenas","88 99805-1116",70,100,0,0],["Pousada Viva Lo Sono","Itapipoca","Av. Anastácio Braga, 1055, Fazendinha","88 99665-8005",120,170,0,0],["Pousada Dourada","Crateús","Rua Carlos Rolim, 23, Centro","88 99704-5833",92,142,190,0],["Pousada Vasconcelos","Tianguá","R. Dep. Manoel Francisco, 438B, Centro","88 99449-2828",120,200,0,0],["Pousada Ramilos","Tianguá","R. Caruá, 1011, Subestação","88 99489-1464",105,180,220,290],["Pousada do Major","Ubajara","Ubajara, CE, 62350-000","85 9607-7865",120,180,0,0],["Pousada Pôr do Sol","Viçosa do Ceará","Sítio Pará, Viçosa do Ceará","88 99732-9668",70,150,150,0],["Pousada Nosso Recanto","Ipu","R. Cel. Félix, 1379, Centro","88 99809-7000",120,180,250,300],["Pousada São Cristóvão","Ipu","Av. Darcy Correa, 500, Centro","88 98170-0266",90,130,160,190]].map(p=>({nome:p[0],cid:p[1],end:p[2],tel:p[3],i:p[4],d:p[5],t:p[6],q:p[7]}));
+ZONAS[2].rotas[0].tarifa='Sertão Inhamus';S.colabs=S.colabs||Object.keys(P).map(n=>({nome:n,cc:P[n]}));S.zonas=S.zonas||ZONAS;S.pous=S.pous||POUS;S.tar&&Object.assign(T,S.tar);S.al&&(AL=S.al);S.edit=null;S.pe=null;S.psub=S.psub||'rot';syncP();
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem('rotas-v3',JSON.stringify(S))}catch(e){}};
+const R=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const D=d=>d?d.split('-').reverse().join('/'):'';
+const num=v=>v===''||v==null?0:+v;
+const rota=id=>S.rotas.find(r=>r.id==id);
+const night=r=>r.tipo==='pernoite';
+const semCusto=r=>['manha','tarde'].includes(r.turno)||((r.destino||'').split(',').filter(Boolean).length>0&&(r.destino||'').split(',').every(x=>x.trim().toLowerCase()==='sobral'));
+const alimRate=p=>p.alimVal===''||p.alimVal==null?AL:num(p.alimVal);
+const rate=(r,p)=>T[r.regiao][p.quarto]??T[r.regiao].dupla;const dt=r=>D(r.data)+(r.volta&&r.volta!==r.data?' → '+D(r.volta):'');
+const prev=(r,p)=>semCusto(r)?0:p.alim*AL+(night(r)?rate(r,p)*r.noites:0);
+const real=(r,p)=>(r.cancelada||p.cancelada)?0:rAlim(r,p)+rHosp(r,p);
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+let TR=null;
+const vAlim=(r,p)=>semCusto(r)?0:p.alim*AL;
+const vHosp=(r,p)=>night(r)&&!semCusto(r)?rate(r,p)*r.noites:0;
+const rAlim=(r,p)=>semCusto(r)?0:num(p.alimR)*alimRate(p);
+const rateR=(r,p)=>p.hospVal===''||p.hospVal==null?rate(r,p):num(p.hospVal);const rHosp=(r,p)=>night(r)&&!semCusto(r)?rateR(r,p)*num(p.hospR):0;const excesso=(r,p)=>night(r)&&!semCusto(r)?Math.max(0,(rateR(r,p)-rate(r,p))*num(p.hospR)):0;const pagoDir=(r,p)=>(r.cancelada||p.cancelada)||!night(r)||semCusto(r)?0:p.pagoTipo==='%'?num(p.pagoVal)/100*(p.hospR!==''?rHosp(r,p):vHosp(r,p)):num(p.pagoVal);const LIVE=['alimR','hospR','hospVal','alimVal','justVal','pagoVal'];
+const ek=c=>S.mes+'|'+c;const entregue=(c,g)=>S.ent[ek(c)]===''||S.ent[ek(c)]==null?g[c].p-g[c].pg:num(S.ent[ek(c)]);
+const who=p=>p.nome+(p.subDe?` (substitui ${p.subDe}${p.motivo?' - '+p.motivo:''})`:'');
+const realCell=(r,p)=>{const ex=excesso(r,p),pg=pagoDir(r,p);return `<div class="sub">${R(rAlim(r,p))} alim.${night(r)?' + '+R(rHosp(r,p))+' hosp.':''}</div><b>${R(real(r,p))}</b>${pg>0?`<div class="sub">Pago à pousada: ${R(pg)}</div>`:''}`};
+const totTxt=r=>{const f=x=>rTot(r,x),pg=f(pagoDir),ex=f(excesso);return 'Gasto de fato: '+R(f(real))+(pg?' · Pago direto à pousada: '+R(pg):'')};
+const rTot=(r,f)=>sum(r.pessoas,p=>f(r,p));
+const nomes=r=>r.pessoas.map(p=>p.nome);
+
+$('mes').value=S.mes;$('ndt').value=new Date().toISOString().slice(0,10);$('ndv').value=$('ndt').value;
+$('mes').onchange=e=>{S.mes=e.target.value||S.mes;S.open=null;save();draw()};
+$('ndt').onchange=$('ndv').onchange=$('nturno').onchange=()=>hint();
+const dias=()=>{const a=$('ndt').value;let b=$('ndv').value||a;if(b<a){b=a;$('ndv').value=a}return Math.max(0,Math.round((new Date(b)-new Date(a))/864e5))};
+function hint(){const n=dias(),t=$('nturno').value;$('nh').textContent=t!=='integral'?'Somente '+(t==='manha'?'manhã':'tarde')+': rota de um turno, sem pagamento de alimentação ou hospedagem.':n?n+' noite(s) fora: cada pessoa tem '+(2*n+1)+' alimentações e '+n+' hospedagem(ns).':'Bate e volta: cada pessoa tem 1 alimentação de '+R(AL)+'.'}
+hint();
+
+function drawForm(){
+  const zv=$('nz').value;
+  $('nz').innerHTML=S.zonas.map(z=>`<option${z.nome===zv?' selected':''}>${esc(z.nome)}</option>`).join('');
+  const z=S.zonas.find(x=>x.nome===$('nz').value)||S.zonas[0];
+  $('nc').innerHTML=[...new Set(z.rotas.flatMap(r=>r.cidades))].map(c=>`<label><input type="checkbox" value="${esc(c)}">${esc(c)}</label>`).join('');
+}
+function drawCad(){
+  $('cadc').innerHTML=S.colabs.length?`<table><thead><tr><th>Nome</th><th>Centro de custo</th><th></th></tr></thead><tbody>${S.colabs.map((c,i)=>`<tr><td>${esc(c.nome)}</td><td><input list="ccs" data-cad="cc" data-i="${i}" value="${esc(c.cc)}"></td><td><button class="btn ghost sm" data-c="delc" data-i="${i}">Remover</button></td></tr>`).join('')}</tbody></table>`:'<div class="empty">Nenhum colaborador cadastrado.</div>';
+  $('cadz').innerHTML=S.zonas.map((z,i)=>`<div class="zona"><div class="rh"><h3 style="font-size:16px">${esc(z.nome)}</h3></div>${z.rotas.map((r,j)=>`<div style="margin:8px 0"><b>${esc(r.nome)}</b> <select data-cad="tarifaR" data-z="${i}" data-r="${j}">${Object.keys(T).map(k=>`<option${k===tarR(z,r)?' selected':''}>${k}</option>`).join('')}</select><div class="cids">${r.cidades.map((c,k)=>`<span class="tag">${esc(c)}<button class="x" data-c="delcid" data-z="${i}" data-r="${j}" data-k="${k}" aria-label="Remover ${esc(c)}">×</button></span>`).join('')}<input data-cad="addcid" data-z="${i}" data-r="${j}" placeholder="+ cidade"></div></div>`).join('')}</div>`).join('');
+}
+$('addc').onclick=()=>{
+  const n=$('cn').value.trim(),c=$('cc').value.trim();
+  if(!n){$('ch').textContent='Informe o nome do colaborador.';return}
+  if(S.colabs.some(x=>x.nome.toLowerCase()===n.toLowerCase())){$('ch').textContent='Esse colaborador já está cadastrado.';return}
+  S.colabs.push({nome:n,cc:c});$('cn').value='';$('cc').value='';$('ch').textContent='';syncP();save();draw();
+};
+document.addEventListener('click',e=>{
+  const t=e.target.dataset;if(!t.c)return;
+  if(t.c==='delc'){const c=S.colabs[t.i];
+    if(S.rotas.some(r=>nomes(r).includes(c.nome))){$('ch').textContent=c.nome+' está em uma rota. Remova da rota antes de excluir o cadastro.';return}
+    S.colabs.splice(t.i,1);syncP()}
+  else if(t.c==='delcid'){S.zonas[t.z].rotas[t.r].cidades.splice(t.k,1)}
+  save();draw();drawForm();
+});
+document.addEventListener('change',e=>{
+  const t=e.target.dataset;if(!t.cad)return;const v=e.target.value.trim();
+  if(t.cad==='cc'){S.colabs[t.i].cc=v;syncP()}
+  else if(t.cad==='tarifaR'){S.zonas[t.z].rotas[t.r].tarifa=e.target.value}
+  else if(t.cad==='addcid'){if(!v)return;S.zonas[t.z].rotas[t.r].cidades.push(v)}
+  save();draw();drawForm();
+});
+$('nz').onchange=drawForm;
+drawForm();
+$('addr').onclick=()=>{
+  const z=S.zonas.find(x=>x.nome===$('nz').value),cs=[...document.querySelectorAll('#nc input:checked')].map(x=>x.value),ex=$('no').value.trim();if(ex)cs.push(ex);
+  if(!cs.length){$('nh').textContent='Marque pelo menos uma cidade ou informe outro destino.';return}
+  const fr=cs.map(c=>z.rotas.find(rr=>rr.cidades.includes(c))).filter(Boolean),tf=fr.map(rr=>tarR(z,rr)).sort((a,b)=>T[b].individual-T[a].individual)[0]||z.tarifa;
+  const nn=dias(),dd=$('ndt').value,vv=$('ndv').value||dd,turno=$('nturno').value,base={destino:cs.join(', '),turno,zona:z.nome,rotaNome:[...new Set(fr.map(rr=>rr.nome))].join(' + ')||'Outro destino',regiao:tf,data:dd,volta:vv,tipo:nn>0?'pernoite':'bate',noites:nn};
+  let r=S.edit&&rota(S.edit);
+  if(r){const old=2*(r.noites||0)+1;r.pessoas.forEach(p=>{if(p.alim===old)p.alim=2*nn+1});Object.assign(r,base)}
+  else{r=Object.assign({id:Date.now(),obs:'',pessoas:[],draft:true},base);S.rotas.push(r)}
+  $('no').value='';document.querySelectorAll('#nc input').forEach(x=>x.checked=false);S.mes=dd.slice(0,7)||S.mes;S.open=r.id;S.nova=false;S.edit=null;hint();save();draw();$('mes').value=S.mes;
+};
+$('cancr').onclick=()=>{S.nova=false;S.edit=null;save();drawRotas()};
+
+function addPessoa(r,nome){
+  r.pessoas.push({nome,alim:2*(r.noites||0)+1,quarto:'individual',par:'',par2:'',alimR:'',hospR:'',hospVal:'',pagoTipo:'R$',pagoVal:'',alimVal:'',justVal:''});
+}
+function ungroup(r,p){[p.par,p.par2].filter(Boolean).forEach(n=>{const o=r.pessoas.find(x=>x.nome===n);if(o){o.par=[o.par,o.par2].filter(x=>x&&x!==p.nome)[0]||'';o.par2='';o.quarto=o.par?'dupla':'individual'}});p.par='';p.par2=''}
+function setQuarto(r,p,q){ungroup(r,p);p.quarto=q}
+function setPar(r,p,nome,slot){
+  const cur=[p.par,p.par2];cur[slot-1]=nome;const names=cur.filter(Boolean),want=p.quarto;
+  ungroup(r,p);names.forEach(n=>ungroup(r,r.pessoas.find(x=>x.nome===n)));
+  const g=[p.nome,...names];
+  g.forEach(n=>{const x=r.pessoas.find(y=>y.nome===n),o=g.filter(m=>m!==n);x.par=o[0]||'';x.par2=o[1]||'';x.quarto=want})
+}
+function delPessoa(r,nome){
+  const p=r.pessoas.find(x=>x.nome===nome);setQuarto(r,p,'individual');
+  r.pessoas=r.pessoas.filter(x=>x.nome!==nome);
+}
+
+function nameCell(r,p){
+  if(TR&&TR.r==r.id&&TR.p===p.nome){
+    const livres=Object.keys(P).filter(n=>!nomes(r).includes(n));
+    if(!livres.length)return `<td><div class="warn">Não há outra pessoa disponível.</div><button class="btn ghost sm" data-a="notr" data-r="${r.id}">Cancelar</button></td>`;
+    return `<td><div class="sub">Trocar ${esc(p.nome)} por:</div><div class="add" style="margin:4px 0 0"><select id="trn">${livres.map(n=>`<option>${n}</option>`).join('')}</select><input id="trm" placeholder="Motivo (ex.: atestado)"><button class="btn sm" data-a="okt" data-r="${r.id}">Confirmar</button><button class="btn ghost sm" data-a="notr" data-r="${r.id}">Cancelar</button></div></td>`;
+  }
+  return `<td>${esc(p.nome)} <span class="hint">${P[p.nome]}</span>${p.subDe?`<div class="sub">Substitui ${esc(p.subDe)}${p.motivo?' · '+esc(p.motivo):''}</div>`:''}</td>`;
+}
+function trocar(r){
+  const p=r.pessoas.find(x=>x.nome===TR.p),novo=$('trn')?$('trn').value:'';
+  if(p&&novo){
+    const motivo=$('trm').value.trim();
+    r.pessoas.forEach(x=>{if(x.par===p.nome)x.par=novo});
+    p.subDe=p.subDe||p.nome;p.motivo=motivo||p.motivo||'';p.nome=novo;
+  }
+  TR=null;
+}
+function trocasHtml(){
+  const l=[];RM().forEach(r=>r.pessoas.forEach(p=>{if(p.subDe)l.push(`<li><b>${esc(p.subDe)}</b> → <b>${esc(p.nome)}</b> na rota ${esc(r.destino)}${p.motivo?': '+esc(p.motivo):''}. O valor foi entregue a ${esc(p.nome)}.</li>`)}));
+  return l.length?`<p class="hint">Trocas de pessoa:</p><ul class="hint">${l.join('')}</ul>`:'';
+}
+function drawDet(){
+  $('lr').innerHTML='<div class="row"><button class="btn ghost sm" data-a="back">← Voltar às rotas</button><button class="btn ghost sm" data-a="edr" data-r="'+S.open+'">Editar rota</button></div>'+S.rotas.filter(r=>r.id==S.open).map(r=>{
+    const livres=Object.keys(P).filter(n=>!nomes(r).includes(n));
+    const head=`<th>Pessoa</th><th>Alimentações</th><th class="n p">Valor alim.</th>${night(r)?'<th>Hospedagem</th><th>Divide quarto com</th><th class="n p">Valor hosp.</th>':''}<th class="n p">Previsto</th><th></th>`;
+    const rows=r.pessoas.map(p=>{
+      const outros=r.pessoas.filter(x=>x.nome!==p.nome);
+      const sel=(sl,val)=>`<select data-f="par" data-slot="${sl}" data-r="${r.id}" data-p="${esc(p.nome)}"><option value="">Escolha…</option>${outros.map(o=>`<option${o.nome===val?' selected':''}>${esc(o.nome)}</option>`).join('')}</select>`;
+      const faltaPar=p.quarto!=='individual'&&!(p.par&&(p.quarto==='dupla'||p.par2));
+      const quarto=night(r)?`<td><select data-f="quarto" data-r="${r.id}" data-p="${esc(p.nome)}">${['individual','dupla','triplo'].map(q=>`<option value="${q}"${p.quarto===q?' selected':''}>${q[0].toUpperCase()+q.slice(1)}</option>`).join('')}</select></td><td>${p.quarto==='individual'?'—':sel(1,p.par)+(p.quarto==='triplo'?sel(2,p.par2):'')}${faltaPar?'<div class="warn">Defina com quem divide</div>':''}</td>`:'';
+      return `<tr>${nameCell(r,p)}<td><input class="q" type="number" min="0" value="${p.alim}" data-f="alim" data-r="${r.id}" data-p="${esc(p.nome)}"></td><td class="n p">${R(vAlim(r,p))}</td>${quarto}${night(r)?`<td class="n p">${R(vHosp(r,p))}</td>`:''}<td class="n p"><b>${R(prev(r,p))}</b></td><td><button class="btn ghost sm" data-a="delp" data-r="${r.id}" data-p="${esc(p.nome)}">Remover</button></td></tr>`}).join('');
+    return `<div class="panel"><div class="rh"><h3>Rota ${esc(r.destino)}<span class="tag">${r.turno&&r.turno!=='integral'?'Somente '+(r.turno==='manha'?'manhã':'tarde'):night(r)?'Dormir · '+r.noites+(r.noites>1?' noites':' noite'):'Bate e volta'}</span><span class="tag">${r.zona?esc(r.zona)+' · '+esc(r.rotaNome):r.regiao}</span>${r.zona?`<span class="tag">Tarifa ${r.regiao}</span>`:''}</h3><div><span class="hint">${dt(r)}</span> <button class="btn ghost sm" data-a="delr" data-r="${r.id}">Excluir rota</button></div></div>
+    ${r.pessoas.length?`<div class="scroll"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="empty">Adicione quem vai nesta rota.</div>'}
+    <p class="hint" style="margin:12px 0 0">Adicionar colaborador (clique no nome):</p><div class="chips">${livres.length?livres.map(n=>`<button class="chb" data-a="addp" data-r="${r.id}" data-p="${esc(n)}">+ ${esc(n)} <span class="hint">${P[n]}</span></button>`).join(''):'<span class="hint">Todos já estão nesta rota.</span>'}</div>
+    ${r.draft?`<div class="pa"><button class="btn big" data-a="saver" data-r="${r.id}" ${r.pessoas.length?'':'disabled'}>✓ Salvar rota</button><button class="btn ghost" data-a="disc" data-r="${r.id}">Descartar rascunho</button></div>`:''}${night(r)?pousSel(r):''}<label style="margin-top:10px">Observação da rota<input value="${esc(r.obs)}" data-f="obs" data-r="${r.id}" placeholder="Ex.: troca de pessoa por motivo de força maior"></label><div class="tot">Total previsto: ${R(rTot(r,prev))}</div></div>`}).join('');
+}
+
+function drawPre(){
+  if(!RM().length){$('lp').innerHTML='<div class="panel empty">Crie as rotas em “Rotas do mês” para prestar contas.</div>';return}
+  $('lp').innerHTML=RM().map(r=>{
+    const nn=night(r),id=`data-r="${r.id}"`,ok=feita(r),aj=!!r.aj;
+    const sol=p=>`<td class="p">${p.alim} alim.${nn?'<br>'+r.noites+' noite(s) · '+p.quarto:''}<div class="sub">${R(prev(r,p))}</div></td>`;
+    const who2=p=>`<td><b>${esc(p.nome)}</b>${p.cancelada?'<div class="tag b">Não realizou a rota</div>':''}<div class="sub">${P[p.nome]}${p.subDe?' · substitui '+esc(p.subDe):''}${p.cancelada&&p.cancelMotivo?' · Motivo: '+esc(p.cancelMotivo):''}</div><button class="btn ghost sm" data-a="${p.cancelada?'uncancelp':'cancelp'}" data-r="${r.id}" data-p="${esc(p.nome)}">${p.cancelada?'Reativar':'Cancelar pessoa'}</button></td>`;
+    let corpo;
+    if(!r.pessoas.length)corpo='<p class="hint">Esta rota ainda não tem colaboradores. Inclua em “Rotas do mês”.</p>';
+    else if(!aj){
+      corpo=`<div class="scroll"><table class="fit"><thead><tr><th>Pessoa</th><th class="p">Solicitado</th>${ok?'<th class="n r">Gasto de fato</th>':''}</tr></thead><tbody>${r.pessoas.map(p=>`<tr>${who2(p)}${sol(p)}${ok?`<td class="n r" data-rv="${r.id}|${esc(p.nome)}">${p.cancelada?'<b>R$ 0,00</b><div class="sub">Cancelado: '+esc(p.cancelMotivo||'')+'</div>':realCell(r,p)}</td>`:''}</tr>`).join('')}</tbody></table></div>
+      <div class="pa">${ok?`<b class="ok">✓ Prestação concluída</b><button class="btn ghost sm" data-a="aj" ${id}>Houve ajuste</button><button class="btn ghost sm" data-a="reabrir" ${id}>Desfazer</button>`:`<button class="btn big" data-a="tudo" ${id}>✓ Foi tudo como previsto</button><button class="btn ghost" data-a="aj" ${id}>Houve ajuste</button>`}</div>`}
+    else{
+      const rows=r.pessoas.map(p=>{const pn=`data-p="${esc(p.nome)}"`;
+        const candidatos=S.colabs.filter(c=>!r.pessoas.some(x=>x.nome===c.nome)).map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}</option>`).join('');
+        return `<tr>${who2(p)}<td><select data-swap="${esc(p.nome)}" data-r="${r.id}"><option value="">Substituir por…</option>${candidatos}</select><input data-swapreason="${esc(p.nome)}" data-r="${r.id}" placeholder="Motivo da troca" style="width:100%;margin-top:4px"><button class="btn ghost sm" data-a="swapreal" data-r="${r.id}" data-p="${esc(p.nome)}">Confirmar troca</button></td>${sol(p)}<td class="r"><input class="q" type="number" min="0" value="${p.alimR}" ${p.cancelada?'disabled':''} data-f="alimR" ${id} ${pn} aria-label="Alimentações realizadas"></td><td class="r"><input class="q" type="number" min="0" step="0.01" value="${p.alimVal??''}" placeholder="${AL}" data-f="alimVal" ${id} ${pn} ${p.cancelada?'disabled':''} aria-label="Valor por alimentação"></td><td class="r"><input value="${esc(p.justVal||'')}" data-f="justVal" ${id} ${pn} ${p.cancelada?'disabled':''} placeholder="Justificativa" aria-label="Justificativa do ajuste"></td>${nn?`<td class="r"><input class="q" type="number" min="0" value="${p.hospR}" data-f="hospR" ${id} ${pn} ${p.cancelada?'disabled':''} aria-label="Noites realizadas"></td><td class="r"><input class="q" type="number" min="0" step="0.01" value="${p.hospVal??''}" placeholder="${rate(r,p)}" data-f="hospVal" ${id} ${pn} ${p.cancelada?'disabled':''} aria-label="Diária real por pessoa"></td><td class="r"><div class="pg2"><select data-f="pagoTipo" ${id} ${pn} ${p.cancelada?'disabled':''} aria-label="Tipo do pagamento direto"><option${p.pagoTipo!=='%'?' selected':''}>R$</option><option${p.pagoTipo==='%'?' selected':''}>%</option></select> <input class="q" type="number" min="0" step="0.01" value="${p.pagoVal??''}" placeholder="0" data-f="pagoVal" ${id} ${pn} ${p.cancelada?'disabled':''} aria-label="Valor pago direto à pousada"></div></td>`:''}<td class="n r" data-rv="${r.id}|${esc(p.nome)}">${p.cancelada?'<b>R$ 0,00</b>':realCell(r,p)}</td></tr>`}).join('');
+      const th=`<th>Pessoa</th><th>Troca no realizado</th><th class="p">Solicitado</th><th class="r">Alimentações<br>feitas</th><th class="r">Valor por refeição</th><th>Justificativa</th>${nn?'<th class="r">Noites<br>dormidas</th><th class="r">Diária real<br>(R$ por pessoa)</th><th class="r">Pago direto à pousada<br>(financeiro)</th>':''}<th class="n r">Gasto de fato</th>`;
+      corpo=`<p class="hint" style="margin:0 0 10px">Os campos já vêm com o solicitado. Mude só o que foi diferente:<br>• <b>Alimentações / noites</b>: quantas foram de fato. Informe valor por refeição e justificativa quando houver diferença.${nn?'<br>• <b>Diária real</b>: informe se a pousada custou valor diferente da tarifa padrão e registre a justificativa.<br>• <b>Pago direto</b>: quanto o financeiro pagou à pousada, em R$ ou %.':''}</p>
+      ${nn?`<div class="pz">${pousSel(r)}<button class="btn ghost sm" data-a="pousval" ${id}>Usar valores da pousada</button></div>`:''}
+      <div class="scroll"><table class="fit"><thead><tr>${th}</tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="pa"><button class="btn" data-a="noaj" ${id}>Concluir ajustes</button><button class="btn ghost sm" data-a="tudo" ${id}>Voltar ao previsto</button></div>`}
+    return `<div class="panel ${ok&&!aj?'st-ok':'st-pend'}"><div class="rh"><h3>Rota ${esc(r.destino)}<span class="tag">${dt(r)}</span>${r.cancelada?'<span class="tag b">Rota cancelada · devolução integral</span>':aj?'<span class="tag w">Em ajuste</span>':tagP(r)}</h3></div>${r.cancelada?`<p class="hint">Rota cancelada. Valor previsto de ${R(rTot(r,prev))} considerado como devolução ao Financeiro. Motivo: ${esc(r.cancelMotivo||'Não informado')}.</p>`:corpo}
+    <div class="pa">${r.cancelada?`<button class="btn ghost sm" data-a="uncancelr" ${id}>Reativar rota</button>`:`<button class="btn ghost sm" data-a="cancelr" ${id}>Cancelar rota inteira</button>`}</div>
+    <label style="margin-top:12px">Observação<input value="${esc(r.obs)}" data-f="obs" ${id} placeholder="Ex.: pousada pediu 50% antecipado"></label>
+    <div class="tot" id="rt${r.id}">${totTxt(r)}</div></div>`}).join('');
+}
+
+function grupos(){const g={};RM().forEach(r=>r.pessoas.forEach(p=>{const x=g[p.nome]=g[p.nome]||{p:0,r:0,obs:[],pn:0,ph:0,pa:0,pav:0,rn:0,rh:0,ra:0,rav:0,pg:0,ex:0,pc:0};x.p+=prev(r,p);x.r+=real(r,p);x.pc+=lanc(r,p)?prev(r,p):0;x.pn+=night(r)?r.noites:0;x.ph+=vHosp(r,p);x.pa+=p.alim;x.pav+=vAlim(r,p);x.rn+=night(r)?num(p.hospR):0;x.rh+=rHosp(r,p);x.ra+=num(p.alimR);x.rav+=rAlim(r,p);x.pg+=pagoDir(r,p);x.ex+=excesso(r,p);if(r.cancelada)x.obs.push('rota cancelada: '+(r.cancelMotivo||'sem motivo informado'));else if(p.cancelada)x.obs.push('não realizou: '+(p.cancelMotivo||'sem motivo informado'));if(p.subDe)x.obs.push('substituiu '+p.subDe+' ('+r.destino+')')}));return g}
+function drawRes(){
+  const g=grupos(),n=Object.keys(g);
+  if(!n.length){$('res').innerHTML='<div class="empty">Sem dados para resumir em '+MN()+'.</div>';return}
+  const A={pa:0,pav:0,ph:0,pn:0,p:0,ra:0,rav:0,rh:0,rn:0,r:0,pg:0,ex:0,pc:0},q=(a,v)=>`${a} · ${R(v)}`;
+  const df=d=>d>0?`<span class="tag w">${R(d)} a ressarcir</span>`:d<0?`<span class="tag b">${R(-d)} a devolver</span>`:'<span class="hint">–</span>';
+  const rows=n.map(nm=>{const x=g[nm];Object.keys(A).forEach(k=>A[k]+=x[k]);
+    return `<tr><td><b>${esc(nm)}</b><div class="sub">${P[nm]||''}${x.obs.length?' · '+esc(x.obs.join(' · ')):''}</div></td><td class="p">${q(x.pa,x.pav)}</td><td class="p">${q(x.pn,x.ph)}</td><td class="p"><b>${R(x.p)}</b></td><td class="r">${q(x.ra,x.rav)}</td><td class="r">${q(x.rn,x.rh)}</td><td class="r"><b>${R(x.r)}</b></td><td class="n">${R(x.pg)}</td><td>${df(x.r-x.pc-x.pg)}</td></tr>`}).join('');
+  $('res').innerHTML=`<table class="fit"><thead><tr><th rowspan="2">Colaborador</th><th colspan="3" class="p">Solicitado</th><th colspan="3" class="r">Gasto de fato</th><th rowspan="2" class="n">Pago direto<br>à pousada</th><th rowspan="2">Diferença</th></tr><tr><th class="p">Alimentação</th><th class="p">Hospedagem</th><th class="p">Total</th><th class="r">Alimentação</th><th class="r">Hospedagem</th><th class="r">Total</th></tr></thead><tbody>${rows}</tbody><tfoot><tr><td>Total do mês</td><td class="p">${q(A.pa,A.pav)}</td><td class="p">${q(A.pn,A.ph)}</td><td class="p">${R(A.p)}</td><td class="r">${q(A.ra,A.rav)}</td><td class="r">${q(A.rn,A.rh)}</td><td class="r">${R(A.r)}</td><td class="n">${R(A.pg)}</td><td>${df(A.r-A.pc-A.pg)}</td></tr></tfoot></table><p class="hint">Cada coluna mostra quantidade · valor. Diferença = gasto de fato − solicitado − valor pago diretamente pelo Financeiro à pousada. Valor negativo indica devolução.</p>${trocasHtml()}`;
+}
+
+const pl=(n,a,b)=>n+' '+(n===1?a:b);
+function linha(r,p,sol){
+  const al=sol?p.alim:num(p.alimR),nt=sol?r.noites:num(p.hospR);
+  const par=p.quarto!=='individual'&&p.par?' com '+[p.par,p.par2].filter(Boolean).join(' e '):'';
+  const hs=night(r)?' + '+pl(nt,'hospedagem','hospedagens')+' ('+p.quarto+par+')':'';
+  const extra=!sol&&night(r)?(p.hospVal!==''&&p.hospVal!=null?' [diária real '+R(num(p.hospVal))+']':'')+(pagoDir(r,p)>0?' [pago direto à pousada: '+R(pagoDir(r,p))+']':''):'';
+  return `  • ${who(p)} (${P[p.nome]}): ${pl(al,'alimentação','alimentações')}${hs}${extra} = ${R(sol?prev(r,p):real(r,p))}`;
+}
+function email(){
+ const sol=$('et').value==='sol',rs=RM().filter(r=>r.pessoas.length);
+ if(!rs.length){$('esub').value='';$('eb').value='Crie rotas e adicione pessoas para gerar o e-mail.';return}
+ const all=rs.flatMap(r=>r.pessoas.map(p=>[r,p]));
+ const al=sum(all,([r,p])=>sol?vAlim(r,p):rAlim(r,p));
+ const hs=sum(all,([r,p])=>sol?vHosp(r,p):rHosp(r,p));
+ const cc={};all.forEach(([r,p])=>{const k=P[p.nome]||'Não informado';cc[k]=(cc[k]||0)+(sol?prev(r,p):real(r,p)-pagoDir(r,p))});
+ const resumo=`Resumo\n  Alimentação: ${R(al)}\n  Hospedagem: ${R(hs)}\n  Por centro de custo:\n${Object.keys(cc).filter(k=>cc[k]!==0).sort().map(k=>`    - ${k}: ${R(cc[k])}`).join('\n')}`;
+ if(sol){
+  $('esub').value=`Solicitação de valores - Rotas de ${MN()}`;
+  $('eb').value=`Olá, time Financeiro!\n\nSegue a solicitação de valores para os colaboradores que irão realizar as rotas de CS, conforme planejado.\n\n${resumo}\n\nTotal solicitado: ${R(al+hs)}\n\nFico à disposição para qualquer ajuste.\n\nAtenciosamente,`;
+ }else{
+  const g=grupos(),n=Object.keys(g),te=sum(n,c=>g[c].p),tr=sum(n,c=>g[c].r),pg=sum(n,c=>g[c].pg),d=tr-te-pg;
+  $('esub').value=`Prestação de contas - Rotas de ${MN()}`;
+  $('eb').value=`Olá, time Financeiro!\n\nSegue a prestação de contas das rotas de ${MN()}.\n\n${resumo}\n\nTotal solicitado: ${R(te)}\nGasto de fato: ${R(tr)}${pg?`\nPago diretamente pelo Financeiro à pousada: ${R(pg)}`:''}\nDiferença: ${R(Math.abs(d))} ${d>0?'a ressarcir':d<0?'a devolver':'(sem diferença)'}\n\nAtenciosamente,`;
+ }
+}
+
+
+function drawAcomp(){
+ const rs=RA().filter(r=>!r.draft);
+ $('acompbody').innerHTML=rs.length?`<div class="scroll"><table class="acomp-table"><thead><tr><th>Mês</th><th>Dia</th><th>Zona</th><th>Rota</th><th>Quem vai do CS?</th><th>Carro</th><th>Quem dirige?</th><th>Turno</th><th>Clientes atendidos</th><th>Observações</th></tr></thead><tbody>${rs.map(r=>`<tr><td>${MN()}</td><td>${D(r.data)}${r.volta&&r.volta!==r.data?' a '+D(r.volta):''}</td><td>${esc(r.zona||'')}</td><td>${esc(r.rotaNome||'')}<div class="sub">${esc(r.destino)}</div></td><td>${esc(r.pessoas.map(p=>p.nome).join(', '))}</td><td><input data-track="carro" data-r="${r.id}" value="${esc(r.carro||'')}" placeholder="Veículo"></td><td><input data-track="motorista" data-r="${r.id}" value="${esc(r.motorista||'')}" placeholder="Motorista"></td><td><select data-track="turno" data-r="${r.id}"><option value="integral"${(r.turno||'integral')==='integral'?' selected':''}>Manhã e tarde</option><option value="manha"${r.turno==='manha'?' selected':''}>Manhã</option><option value="tarde"${r.turno==='tarde'?' selected':''}>Tarde</option></select></td><td><input type="number" min="0" data-track="clientes" data-r="${r.id}" value="${r.clientes??''}" placeholder="0"></td><td><input data-track="obs" data-r="${r.id}" value="${esc(r.obs||'')}" placeholder="Observações da visita"></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">As rotas salvas do mês aparecerão aqui para acompanhamento.</div>';
+}
+document.addEventListener('change',e=>{const t=e.target.dataset;if(!t.track)return;const r=rota(t.r);r[t.track]=t.track==='clientes'?(e.target.value===''?'':Math.max(0,+e.target.value)):e.target.value;save();drawAcomp()});
+
+function draw(){drawFil();drawRotas();drawPre();drawRes();email();drawCad();drawPou();drawDsh();drawPSub();drawAcomp()}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-a]');if(!el)return;const t=el.dataset;const r=rota(t.r);
+  if(t.a==='open'){S.open=r.id}else if(t.a==='back'){S.open=null}else if(t.a==='addp'){addPessoa(r,t.p)}
+  else if(t.a==='edr'){S.edit=r.id;S.nova=true;S.open=null;$('nz').value=r.zona;drawForm();const cs=r.destino.split(', '),ls=[...document.querySelectorAll('#nc input')];ls.forEach(x=>x.checked=cs.includes(x.value));$('no').value=cs.filter(c=>!ls.some(x=>x.value===c)).join(', ');$('ndt').value=r.data;$('ndv').value=r.volta||r.data;$('nturno').value=r.turno||'integral';hint();window.scrollTo(0,0)}
+  else if(t.a==='pousval'){const x=S.pous.find(q=>q.nome===r.pousada);if(x)r.pessoas.forEach(p=>{if(!night(r))return;const v=p.quarto==='individual'?x.i:p.quarto==='dupla'?x.d/2:x.t/3;if(v)p.hospVal=Math.round(v*100)/100})}
+  else if(t.a==='saver'){if(r.pessoas.length){r.draft=false;S.open=null}}
+  else if(t.a==='disc'){S.rotas=S.rotas.filter(x=>x!==r);S.open=null}
+  else if(t.a==='delp'){delPessoa(r,t.p)}
+  else if(t.a==='delr'){S.rotas=S.rotas.filter(x=>x!==r);S.open=null}
+  else if(t.a==='cancelr'){const motivo=prompt('Informe o motivo do cancelamento da rota:');if(motivo===null)return;if(!motivo.trim()){alert('Informe o motivo do cancelamento.');return}if(confirm('Cancelar esta rota? O valor previsto será considerado como devolução ao Financeiro.')){r.cancelada=true;r.cancelMotivo=motivo.trim();r.pessoas.forEach(p=>{p.alimR='';p.hospR='';});r.aj=false}}
+  else if(t.a==='uncancelr'){if(confirm('Reativar esta rota?')){r.cancelada=false;r.cancelMotivo='';r.pessoas.forEach(p=>{p.cancelada=false;p.cancelMotivo='';p.alimR='';p.hospR='';});r.aj=false}}
+  else if(t.a==='cancelp'){const p=r.pessoas.find(x=>x.nome===t.p);if(!p)return;const motivo=prompt('Informe o motivo pelo qual '+p.nome+' não realizou a rota:');if(motivo===null)return;if(!motivo.trim()){alert('Informe o motivo do cancelamento.');return}if(confirm('Confirmar que '+p.nome+' não realizou esta rota? O valor previsto ficará como devolução ao Financeiro.')){p.cancelada=true;p.cancelMotivo=motivo.trim();p.alimR='';p.hospR='';p.hospVal='';p.alimVal='';p.pagoVal='';p.pagoTipo='R$';r.aj=true}}
+  else if(t.a==='uncancelp'){const p=r.pessoas.find(x=>x.nome===t.p);if(p&&confirm('Reativar '+p.nome+' nesta rota?')){p.cancelada=false;p.cancelMotivo='';p.alimR='';p.hospR='';r.aj=true}}
+  else if(t.a==='swapreal'){const p0=r.pessoas.find(x=>x.nome===t.p),sel=document.querySelector(`[data-swap="${CSS.escape(t.p)}"][data-r="${t.r}"]`),reason=document.querySelector(`[data-swapreason="${CSS.escape(t.p)}"][data-r="${t.r}"]`);if(p0&&sel&&sel.value){if(!reason||!reason.value.trim()){alert('Informe o motivo da troca.');return}const old=p0.nome,novo=sel.value;p0.subDe=old;p0.motivo=reason.value.trim();r.pessoas.forEach(x=>{if(x.par===old)x.par=novo;if(x.par2===old)x.par2=novo});p0.nome=novo;TR=null}}else if(t.a==='trocar'){TR={r:t.r,p:t.p}}
+  else if(t.a==='notr'){TR=null}
+  else if(t.a==='okt'){trocar(r)}
+  else if(t.a==='copyp'||t.a==='tudo'){r.pessoas.forEach(p=>{p.alimR=p.alim;p.hospR=night(r)?r.noites:'';p.hospVal='';p.alimVal='';p.justVal='';p.pagoVal='';p.pagoTipo='R$'});r.aj=false}
+  else if(t.a==='aj'){r.pessoas.forEach(p=>{if(p.alimR===''){p.alimR=p.alim;p.hospR=night(r)?r.noites:''}});r.aj=true}
+  else if(t.a==='noaj'){const pend=r.pessoas.filter(p=>(!semCusto(r)&&((p.alimVal!==''&&p.alimVal!=null&&num(p.alimVal)!==AL)||(p.hospVal!==''&&p.hospVal!=null&&num(p.hospVal)!==rate(r,p))))&&!String(p.justVal||'').trim());if(pend.length){alert('Informe uma justificativa para cada valor diferente do padrão: '+pend.map(p=>p.nome).join(', '));return}r.aj=false}
+  else if(t.a==='reabrir'){r.pessoas.forEach(p=>{p.alimR='';p.hospR='';p.hospVal='';p.pagoVal='';p.pagoTipo='R$'});r.aj=false}
+  save();draw();
+});
+document.addEventListener('change',e=>{
+  const t=e.target.dataset,v=e.target.value;
+  if(e.target.id==='et'){email();return}
+  if(!t.f||LIVE.includes(t.f))return;
+  if(t.f==='ent'){S.ent[ek(t.p)]=v===''?'':+v}
+  else{
+    const r=rota(t.r);if(t.f==='obs'){r.obs=v}else if(t.f==='pousada'){r.pousada=v}
+    else{const p=r.pessoas.find(x=>x.nome===t.p);
+      if(t.f==='quarto')setQuarto(r,p,v);
+      else if(t.f==='par')setPar(r,p,v,+e.target.dataset.slot||1);
+      else if(t.f==='pagoTipo')p.pagoTipo=v;else p[t.f]=v===''?'':Math.max(0,+v)}
+  }
+  save();draw();
+});
+document.addEventListener('input',e=>{
+  const t=e.target.dataset;if(!LIVE.includes(t.f))return;
+  const r=rota(t.r),p=r.pessoas.find(x=>x.nome===t.p);
+  p[t.f]=t.f==='justVal'?e.target.value:(e.target.value===''?'':Math.max(0,+e.target.value));
+  const c=[...document.querySelectorAll('[data-rv]')].find(x=>x.dataset.rv===t.r+'|'+t.p);
+  if(c)c.innerHTML=realCell(r,p);
+  const tt=$('rt'+r.id);if(tt)tt.textContent=totTxt(r);
+  save();drawRes();email();drawPK();drawDsh();
+});
+function show(t,sb){['rot','pre','dsh','cad'].forEach(id=>$(id).hidden=id!==t);if(sb)S.sub=sb;
+  document.querySelectorAll('.top nav .mb').forEach(b=>b.setAttribute('aria-selected',b.dataset.t?b.dataset.t===t:!!b.parentNode.querySelector('[data-t="'+t+'"]')));save();draw()}
+document.addEventListener('click',e=>{const b=e.target.closest('.top nav button'),op=document.querySelector('.dm.open');
+  if(!b){if(op)op.classList.remove('open');return}
+  if(b.classList.contains('mb')&&!b.dataset.t){const dm=b.parentNode,was=dm.classList.contains('open');if(op)op.classList.remove('open');if(!was)dm.classList.add('open');return}
+  if(op)op.classList.remove('open');show(b.dataset.t,b.dataset.s)});
+$('copysub').onclick=async()=>{try{await navigator.clipboard.writeText($('esub').value)}catch(e){$('esub').select();document.execCommand('copy')} $('cms').textContent='Assunto copiado.';setTimeout(()=>$('cms').textContent='',2500)};
+$('copy').onclick=async()=>{
+  try{await navigator.clipboard.writeText($('eb').value)}catch(e){$('eb').select();document.execCommand('copy')}
+  $('cm').textContent='E-mail copiado.';setTimeout(()=>$('cm').textContent='',2500);
+};
+const RA=()=>S.rotas.filter(r=>(r.data||'').slice(0,7)===S.mes).sort((a,b)=>a.data.localeCompare(b.data));const RM=()=>RA().filter(r=>!r.draft);const lanc=(r,p)=>r.cancelada||p.cancelada||p.alimR!=='';
+const MN=()=>new Date(S.mes+'-15T12:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+const feita=r=>!!r.cancelada||(r.pessoas.length>0&&r.pessoas.every(p=>p.cancelada||p.alimR!==''));
+const tagP=r=>r.pessoas.length?feita(r)?'<span class="tag o">Feita</span>':'<span class="tag w">Pendente</span>':'<span class="tag b">Sem pessoas</span>';
+let F={z:'',t:'',c:'',q:'',s:''};
+function filt(){return RA().filter(r=>(!F.z||r.zona===F.z)&&(!F.t||r.tipo===F.t)&&(!F.c||nomes(r).includes(F.c))&&(!F.q||r.destino.toLowerCase().includes(F.q.toLowerCase()))&&(!F.s||(F.s==='vazia'?!r.pessoas.length:F.s==='ok'?feita(r):r.pessoas.length>0&&!feita(r))))}
+function drawFil(){const o=(id,a,l)=>{const v=$(id).value;$(id).innerHTML='<option value="">'+l+'</option>'+a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')};o('fz',S.zonas.map(z=>z.nome),'Todas');o('fc',S.colabs.map(c=>c.nome),'Todos')}
+function drawRotas(){
+  $('tb').hidden=!!S.open;$('kp').hidden=!!S.open;{const k=kpi();$('kp').innerHTML=card1('Rotas no mês',k.rs.length)+card1('Colaboradores em rota',k.pp)+card1('Solicitado',R(k.sol),'','sol')+card1('Prestações concluídas',k.ok+' de '+k.rs.length)}$('np').hidden=!S.nova||!!S.open;$('nth').textContent=S.edit?'Editar rota':'Nova rota';$('addr').textContent=S.edit?'Salvar alterações':'Adicionar colaboradores →';
+  if(S.open&&rota(S.open)){drawDet();return}
+  S.open=null;const L=filt();
+  $('lr').innerHTML=L.length?`<div class="rcs">${L.map(r=>`<article class="rc" data-a="open" data-r="${r.id}"><div class="rc-h"><div><b>${esc(r.destino)}</b><div class="sub">${esc(r.zona)} · ${esc(r.rotaNome)}</div></div>${r.cancelada?'<span class="tag b">Cancelada · devolução</span>':r.draft?'<span class="tag w">Rascunho</span>':tagP(r)}</div><div class="rc-m"><span>📅 ${dt(r)}</span><span>${r.turno&&r.turno!=='integral'?'Somente '+(r.turno==='manha'?'manhã':'tarde'):night(r)?'Dormir · '+r.noites+(r.noites>1?' noites':' noite'):'Bate e volta'}</span></div><p class="rc-p">${esc(nomes(r).join(', '))||'<span class="hint">Nenhum colaborador ainda</span>'}</p><div class="rc-f"><b>${R(rTot(r,prev))}</b><span><button class="btn ghost sm" data-a="edr" data-r="${r.id}">Editar</button> <button class="btn sm" data-a="open" data-r="${r.id}">Abrir</button></span></div></article>`).join('')}</div><p class="hint"><b>${L.length} rota(s)</b> em ${MN()} · previsto ${R(sum(L,r=>rTot(r,prev)))}</p>`:'<div class="panel empty">Nenhuma rota encontrada em '+MN()+'. Use “+ Nova rota” para criar.</div>';
+}
+$('bn').onclick=()=>{S.nova=!S.nova;S.edit=null;save();drawRotas()};
+$('tb').addEventListener('input',()=>{F={z:$('fz').value,t:$('ft').value,c:$('fc').value,q:$('fq').value,s:$('fs').value};drawRotas()});
+const nd=v=>v?R(v):'–';
+function tarC(c){for(const z of S.zonas)for(const r of z.rotas)if(r.cidades.includes(c))return T[tarR(z,r)];return null}
+function zonaC(c){for(const z of S.zonas)for(const r of z.rotas)if(r.cidades.includes(c))return z.nome+' · '+r.nome;return 'Sem zona'}
+const over=p=>{const t=tarC(p.cid);return t?[p.i>t.individual,p.d/2>t.dupla]:[false,false]};
+function pousSel(r){const cs=r.destino.split(', '),L=S.pous.filter(p=>cs.includes(p.cid)),x=L.find(p=>p.nome===r.pousada);
+return `<label style="margin-top:10px;max-width:520px">Pousada<select data-f="pousada" data-r="${r.id}"><option value="">Escolha…</option>${L.map(p=>`<option value="${esc(p.nome)}"${x===p?' selected':''}>${esc(p.nome)} · ${esc(p.cid)}</option>`).join('')}</select></label>${x?`<p class="hint">Individual ${R(x.i)} · dupla ${R(x.d)} (${R(x.d/2)} por pessoa)${x.cafe==='sim'?' · café da manhã incluso':x.cafe==='nao'?' · sem café da manhã':''}${over(x).some(Boolean)?' · <b class="bad">acima do limite da zona</b>':''}</p>`:L.length?'':'<p class="hint">Nenhuma pousada cadastrada para as cidades desta rota.</p>'}`}
+const cafeT=k=>k==='sim'?'<span class="tag o">☕ Café incluso</span>':k==='nao'?'<span class="tag w">Sem café da manhã</span>':'<span class="tag">Café não informado</span>';
+function card(p,i,ed){const [a,b]=over(p);
+  return `<article class="rc" style="cursor:default"><div class="rc-h"><div><b>${esc(p.nome)}</b><div class="sub">${esc(p.cid)} · ${esc(zonaC(p.cid))}</div></div>${a||b?'<span class="tag b">Acima do limite</span>':'<span class="tag o">Dentro do limite</span>'}</div><p class="rc-p">${p.tel?'📞 '+esc(p.tel)+'<br>':''}${p.end?'📍 '+esc(p.end):'<span class="hint">Sem endereço</span>'}</p><div class="pr"><span>Individual <b>${nd(p.i)}</b></span><span>Dupla <b>${nd(p.d)}</b>${p.d?` <small>(${R(p.d/2)}/pessoa)</small>`:''}</span><span>Triplo <b>${nd(p.t)}</b></span><span>Quádruplo <b>${nd(p.q)}</b></span></div><div class="rc-m">${cafeT(p.cafe)}${p.obs?'<span>'+esc(p.obs)+'</span>':''}</div>${ed?`<div class="rc-f"><span></span><span><button class="btn ghost sm" data-k2="edpou" data-i="${i}">Editar</button> <button class="btn ghost sm" data-k2="delpou" data-i="${i}">Excluir</button></span></div>`:''}</article>`}
+function drawPou(){
+  const o=(id,a,l)=>{const v=$(id).value;$(id).innerHTML='<option value="">'+l+'</option>'+a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')};
+  o('pz',S.zonas.map(z=>z.nome),'Todas');o('pcid',[...new Set(S.pous.map(p=>p.cid))].sort(),'Todas');
+  $('cids').innerHTML=[...new Set(S.zonas.flatMap(z=>z.rotas.flatMap(r=>r.cidades)))].map(c=>`<option value="${esc(c)}">`).join('');
+  const q=$('pq').value.toLowerCase(),z=$('pz').value,c=$('pcid').value,l=$('pl').value,k=$('pk').value,A=S.pous.map((p,i)=>({p,i}));
+  const L=A.filter(({p})=>{const ab=over(p).some(Boolean);return(!c||p.cid===c)&&(!z||zonaC(p.cid).startsWith(z))&&(!l||(l==='no')===ab)&&(!k||(p.cafe||'')===k)&&(!q||(p.nome+p.cid+p.end+p.tel).toLowerCase().includes(q))});
+  $('pc').textContent=L.length+' de '+S.pous.length+' pousadas';
+  $('pt').innerHTML=L.length?'<div class="rcs">'+L.map(({p,i})=>card(p,i,true)).join('')+'</div>':'<div class="panel empty">Nenhuma pousada encontrada.</div>';
+  
+  $('sn').innerHTML=[['col','Colaboradores'],['zon','Zonas, rotas e cidades'],['pou','Pousadas'],['reg','Valores e tarifas']].map(([k2,t])=>`<button class="chb${S.sub===k2?' on':''}" data-k2="sub" data-v="${k2}">${t}</button>`).join('');
+  ['col','zon','pou','reg'].forEach(k2=>$('c-'+k2).hidden=S.sub!==k2);
+  $('ral').value=AL;
+  $('cadt').innerHTML=`<table><thead><tr><th>Tarifa</th><th>Individual (R$)</th><th>Dupla por pessoa (R$)</th><th>Triplo por pessoa (R$)</th></tr></thead><tbody>${Object.keys(T).map(k2=>`<tr><td>${esc(k2)}</td>${['individual','dupla','triplo'].map(w=>`<td><input type="number" min="0" data-tar="${esc(k2)}" data-w="${w}" value="${T[k2][w]??T[k2].dupla}"></td>`).join('')}</tr>`).join('')}</tbody></table>`;
+}
+['pq','pz','pcid','pl','pk'].forEach(k=>$(k).oninput=drawPou);
+document.addEventListener('change',e=>{const d=e.target.dataset;
+  if(d.tar){T[d.tar][d.w]=num(e.target.value);S.tar=T}else if(e.target.id==='ral'){AL=num(e.target.value)||25;S.al=AL}else return;save();draw()});
+const PF=['xn','xc','xt','xe','xi','xd','xr','xq','xo'];
+function clearP(){S.pe=null;PF.concat('xp').forEach(k=>$(k).value='');$('xk').value='';$('xh').textContent='Nova pousada';$('xcn').hidden=true;$('xf').hidden=true;$('xs').textContent='Salvar pousada'}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-k2]');if(!el)return;const d=el.dataset;
+  if(d.k2==='sub')S.sub=d.v;else if(d.k2==='psub')S.psub=d.v;
+  else if(d.k2==='delpou'){S.pous.splice(d.i,1);if(S.pe!=null)clearP()}
+  else if(d.k2==='edpou'){const p=S.pous[d.i];S.pe=+d.i;['nome','cid','tel','end','i','d','t','q','obs'].forEach((k,n)=>$(PF[n]).value=p[k]??'');$('xk').value=p.cafe||'';$('xh').textContent='Editar pousada';$('xf').hidden=false;$('xcn').hidden=false;$('xs').textContent='Salvar alterações';$('ah').textContent='';show('cad','pou');window.scrollTo(0,0);return}
+  save();draw()});
+$('xs').onclick=()=>{const n=$('xn').value.trim(),c=$('xc').value.trim();if(!n||!c){$('ah').textContent='Informe pelo menos nome e cidade.';return}
+  const p={nome:n,cid:c,tel:$('xt').value.trim(),end:$('xe').value.trim(),cafe:$('xk').value,i:num($('xi').value),d:num($('xd').value),t:num($('xr').value),q:num($('xq').value),obs:$('xo').value.trim()};
+  if(S.pe!=null)S.pous[S.pe]=p;else S.pous.push(p);clearP();save();draw();$('ah').textContent='Pousada salva.'};
+$('xcn').onclick=()=>{clearP();$('ah').textContent=''};
+$('xnew').onclick=()=>{clearP();$('xf').hidden=false;$('xcn').hidden=false;$('xn').focus()};
+$('xpb').onclick=()=>{const t=$('xp').value,m=t.match(/(?:\+?55\s?)?\(?\d{2}\)?\s?9?\d{4}[-\s.]?\d{4}/);if(m)$('xt').value=m[0].trim();
+  const e=t.replace(m?m[0]:'','').split(/\n/).map(x=>x.replace(/^(telefone|tel|whatsapp|contato|endere[cç]o)\s*:?\s*/i,'').replace(/^[\s,;:\-–]+|[\s,;:\-–]+$/g,'')).filter(Boolean).join(', ');if(e)$('xe').value=e;
+  $('ah').textContent=m||e?'Campos preenchidos. Confira antes de salvar.':'Não encontrei telefone nem endereço no texto.'};
+function agg(kf){const o={};RM().forEach(r=>r.pessoas.forEach(p=>{const k=kf(r,p),x=o[k]=o[k]||{r:new Set(),n:0,a:0,h:0,p:0,re:0};x.r.add(r.id);x.n++;x.a+=p.alim;x.h+=night(r)?r.noites:0;x.p+=prev(r,p);x.re+=real(r,p)}));return o}
+function tb2(o,l){const ks=Object.keys(o).sort();if(!ks.length)return '<div class="empty">Sem dados em '+MN()+'.</div>';const t={n:0,a:0,h:0,p:0,re:0};
+  return `<table><thead><tr><th>${l}</th><th class="n">Rotas</th><th class="n">Pessoas</th><th class="n">Alim.</th><th class="n">Hosp.</th><th class="n p">Solicitado</th><th class="n r">Gasto de fato</th></tr></thead><tbody>${ks.map(k=>{const x=o[k];['n','a','h','p','re'].forEach(y=>t[y]+=x[y]);return `<tr><td>${esc(k)}</td><td class="n">${x.r.size}</td><td class="n">${x.n}</td><td class="n">${x.a}</td><td class="n">${x.h}</td><td class="n p">${R(x.p)}</td><td class="n r">${R(x.re)}</td></tr>`}).join('')}</tbody><tfoot><tr><td>Total</td><td class="n">${RM().filter(r=>r.pessoas.length).length}</td><td class="n">${t.n}</td><td class="n">${t.a}</td><td class="n">${t.h}</td><td class="n p">${R(t.p)}</td><td class="n r">${R(t.re)}</td></tr></tfoot></table>`}
+function drawRzn(){$('rz1').innerHTML=tb2(agg(r=>r.zona+' · '+r.rotaNome),'Zona · rota');$('rz2').innerHTML=tb2(agg((r,p)=>P[p.nome]),'Centro de custo')}
+$('xls').onclick=async()=>{const L=[['Ida','Volta','Zona','Rota','Destino','Colaborador','Centro de custo','Alim. prev.','Hosp. prev.','Quarto','Previsto','Alim. real.','Hosp. real.','Realizado']];
+  RM().forEach(r=>r.pessoas.forEach(p=>L.push([D(r.data),D(r.volta||r.data),r.zona,r.rotaNome,r.destino,p.nome,P[p.nome],p.alim,night(r)?r.noites:0,night(r)?p.quarto:'',prev(r,p),num(p.alimR),night(r)?num(p.hospR):0,real(r,p)])));
+  const t=L.map(x=>x.join('\t')).join('\n');try{await navigator.clipboard.writeText(t)}catch(err){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove()}
+  $('xm').textContent=L.length>1?'Copiado! Cole no Excel.':'Não há dados no mês.';setTimeout(()=>$('xm').textContent='',3000)};
+
+function kpi(){const rs=RM(),ps=rs.flatMap(r=>r.pessoas.map(p=>[r,p])),S2=f=>sum(ps,([r,p])=>f(r,p));
+  return{rs,ps,pp:new Set(ps.map(x=>x[1].nome)).size,sol:S2(prev),gas:S2(real),solc:S2((r,p)=>lanc(r,p)?prev(r,p):0),ok:rs.filter(feita).length,al:S2((r,p)=>p.alim),nt:S2((r,p)=>night(r)?r.noites:0),pg:S2(pagoDir),ex:S2(excesso)}}
+const card1=(l,v,sub,cls)=>`<div class="kc ${cls||''}"><small>${l}</small><b>${v}</b>${sub?`<span class="sub">${sub}</span>`:''}</div>`;
+function drawPK(){const k=kpi(),d=k.gas-k.solc;$('pkc').innerHTML=card1('Solicitado',R(k.sol),'','sol')+card1('Gasto de fato',R(k.gas),'rotas já lançadas','gas')+card1('Diferença',R(Math.abs(d)),d>0?'a ressarcir':d<0?'a devolver':'sem diferença')+card1('Prestações concluídas',k.ok+' de '+k.rs.length)}
+function drawPSub(){drawPK();$('psn').innerHTML=[['rot','Prestação por rota'],['res','Resumo do mês'],['eml','E-mail ao financeiro']].map(([k,t])=>`<button class="chb${S.psub===k?' on':''}" data-k2="psub" data-v="${k}">${t}</button>`).join('');['rot','res','eml'].forEach(k=>$('pp-'+k).hidden=S.psub!==k)}
+function bars(rows){const mx=Math.max(1,...rows.flatMap(x=>[x[1],x[2]]));return rows.length?rows.map(([l,a,b])=>`<div class="br"><div class="bl">${esc(l)}</div><div class="bb"><div class="bs" style="width:${Math.max(a/mx*70,.5)}%"></div><span>${R(a)}</span></div><div class="bb"><div class="bg" style="width:${Math.max(b/mx*70,.5)}%"></div><span>${R(b)}</span></div></div>`).join('')+'<p class="hint"><i class="lg s"></i>Solicitado<i class="lg g"></i>Gasto de fato</p>':'<div class="empty">Sem dados no mês.</div>'}
+function drawDsh(){const k=kpi(),d=k.gas-k.solc;
+  $('dk').innerHTML=card1('Rotas no mês',k.rs.length)+card1('Colaboradores em rota',k.pp)+card1('Alimentações',k.al)+card1('Hospedagens (noites)',k.nt)+card1('Solicitado',R(k.sol),'','sol')+card1('Gasto de fato',R(k.gas),'rotas já lançadas','gas')+card1('Diferença',R(Math.abs(d)),d>0?'a ressarcir':d<0?'a devolver':'sem diferença')+card1('Pago direto à pousada',R(k.pg))+card1('Acima do limite',R(k.ex),'custeado pela empresa')+card1('Prestações concluídas',k.ok+' de '+k.rs.length);
+  const ag=o=>Object.keys(o).sort().map(x=>[x,o[x].p,o[x].re]);
+  $('dz').innerHTML=bars(ag(agg(r=>r.zona)));$('dcc').innerHTML=bars(ag(agg((r,p)=>P[p.nome])));
+  const M={};S.rotas.filter(r=>!r.draft).forEach(r=>{const m=(r.data||'').slice(0,7);r.pessoas.forEach(p=>{const x=M[m]=M[m]||[0,0];x[0]+=prev(r,p);x[1]+=real(r,p)})});
+  $('dmo').innerHTML=bars(Object.keys(M).sort().slice(-6).map(m=>[new Date(m+'-15T12:00').toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}),M[m][0],M[m][1]]));
+  const C={};RM().forEach(r=>{if(r.pousada)C[r.pousada]=(C[r.pousada]||0)+r.pessoas.length});
+  const top=Object.keys(C).sort((a,b)=>C[b]-C[a]).slice(0,5);
+  $('dpou').innerHTML=top.length?top.map(n=>{const p=S.pous.find(x=>x.nome===n);return `<div class="rc-f" style="border:0;padding:6px 0"><span><b>${esc(n)}</b><div class="sub">${p?esc(p.cid):''}</div></span><span class="tag">${C[n]} hospedagem(ns)-pessoa</span></div>`}).join(''):'<div class="empty">Escolha a pousada ao montar as rotas para ver o ranking.</div>';
+  drawRzn()}
+
+draw();
+</script>
+</body>
+</html>
