@@ -220,8 +220,34 @@ const POUS=[["Hotel Pilotos","Itapipoca","Av. Monsenhor Tabosa, 2168, Madalenas"
 ZONAS[2].rotas[0].tarifa='Sertão Inhamus';S.colabs=S.colabs||Object.keys(P).map(n=>({nome:n,cc:P[n]}));S.zonas=S.zonas||ZONAS;S.pous=S.pous||POUS;S.tar&&Object.assign(T,S.tar);S.al&&(AL=S.al);S.edit=null;S.pe=null;S.psub=S.psub||'rot';syncP();
 const $=id=>document.getElementById(id);
 const save=()=>{try{localStorage.setItem('rotas-v3',JSON.stringify(S))}catch(e){} if(cloudReady){clearTimeout(saveTimer);$('cloudStatus').textContent='Alterações pendentes…';saveTimer=setTimeout(saveCloud,700)}};
-async function saveCloud(){if(!cloudReady)return;try{const {error}=await sb.from('controle_rotas').upsert({id:1,dados:S,atualizado_em:new Date().toISOString()},{onConflict:'id'});if(error)throw error;$('cloudStatus').textContent='Sincronizado com o banco';}catch(e){$('cloudStatus').textContent='Falha ao sincronizar: '+(e.message||'verifique a conexão');console.error(e)}}
-async function startApp(){const {data:{session}}=await sb.auth.getSession();if(!session){$('authGate').style.display='flex';return} $('authGate').style.display='none';$('authEmail').value=session.user.email||'';try{const {data,error}=await sb.from('controle_rotas').select('dados').eq('id',1).maybeSingle();if(error)throw error;if(data&&data.dados&&Object.keys(data.dados).length){S=data.dados;S.colabs=S.colabs||Object.keys(P).map(n=>({nome:n,cc:P[n]}));S.zonas=S.zonas||ZONAS;S.pous=S.pous||POUS;S.ent=S.ent||{};S.rotas=S.rotas||[];S.tar&&Object.assign(T,S.tar);if(S.al)AL=S.al;syncP();localStorage.setItem('rotas-v3',JSON.stringify(S));}else{await sb.from('controle_rotas').upsert({id:1,dados:S,atualizado_em:new Date().toISOString()},{onConflict:'id'});}cloudReady=true;$('cloudStatus').textContent='Conectado · '+session.user.email;draw();}catch(e){$('cloudStatus').textContent='Erro ao carregar banco: '+e.message;console.error(e)}}
+// Mantém a tabela colaboradores sincronizada sem enviar o id: o Supabase o gera automaticamente.
+async function syncColabsCloud(){
+  const {data:rows,error}=await sb.from('colaboradores').select('id,nome');
+  if(error)throw error;
+  const existentes=rows||[],porNome=new Map();
+  existentes.forEach(row=>{if(row.nome)porNome.set(row.nome.trim().toLowerCase(),row)});
+  const atuais=new Set();
+  for(const c of (S.colabs||[])){
+    const nome=String(c.nome||'').trim();if(!nome)continue;
+    const chave=nome.toLowerCase();atuais.add(chave);
+    const existente=porNome.get(chave);
+    const registro={nome,centro_custo:String(c.cc||''),ativo:true};
+    const resp=existente
+      ? await sb.from('colaboradores').update(registro).eq('id',existente.id)
+      : await sb.from('colaboradores').insert(registro);
+    if(resp.error)throw resp.error;
+  }
+  // Quem foi removido do cadastro do aplicativo fica inativo no banco, preservando o histórico.
+  for(const row of existentes){
+    const chave=String(row.nome||'').trim().toLowerCase();
+    if(chave&&!atuais.has(chave)){
+      const {error:err}=await sb.from('colaboradores').update({ativo:false}).eq('id',row.id);
+      if(err)throw err;
+    }
+  }
+}
+async function saveCloud(){if(!cloudReady)return;try{await syncColabsCloud();const {error}=await sb.from('controle_rotas').upsert({id:1,dados:S,atualizado_em:new Date().toISOString()},{onConflict:'id'});if(error)throw error;$('cloudStatus').textContent='Sincronizado com o banco';}catch(e){$('cloudStatus').textContent='Falha ao sincronizar: '+(e.message||'verifique a conexão');console.error(e)}}
+async function startApp(){const {data:{session}}=await sb.auth.getSession();if(!session){$('authGate').style.display='flex';return} $('authGate').style.display='none';$('authEmail').value=session.user.email||'';try{const {data,error}=await sb.from('controle_rotas').select('dados').eq('id',1).maybeSingle();if(error)throw error;if(data&&data.dados&&Object.keys(data.dados).length){S=data.dados;S.colabs=S.colabs||Object.keys(P).map(n=>({nome:n,cc:P[n]}));S.zonas=S.zonas||ZONAS;S.pous=S.pous||POUS;S.ent=S.ent||{};S.rotas=S.rotas||[];S.tar&&Object.assign(T,S.tar);if(S.al)AL=S.al;syncP();localStorage.setItem('rotas-v3',JSON.stringify(S));}else{const {error:saveError}=await sb.from('controle_rotas').upsert({id:1,dados:S,atualizado_em:new Date().toISOString()},{onConflict:'id'});if(saveError)throw saveError;}await syncColabsCloud();cloudReady=true;$('cloudStatus').textContent='Conectado · '+session.user.email;draw();}catch(e){$('cloudStatus').textContent='Erro ao carregar banco: '+e.message;console.error(e)}}
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();$('authMsg').textContent='Entrando…';const {error}=await sb.auth.signInWithPassword({email:$('authEmail').value.trim(),password:$('authPassword').value});if(error){$('authMsg').textContent='Não foi possível entrar: '+error.message;return}await startApp()});
 $('logoutBtn').addEventListener('click',async()=>{cloudReady=false;await sb.auth.signOut();$('authGate').style.display='flex';$('authMsg').textContent='Você saiu do sistema.'});
 sb.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){cloudReady=false;$('authGate').style.display='flex'}});
